@@ -1,0 +1,62 @@
+{% load static %}
+
+
+
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Pago del Aviso</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+        }
+        .header {
+            height: 100px;
+            background-color: #f2f2f2;
+            text-align: center;
+        }
+        .logo {
+            max-width: 700px;
+            height: 120px;
+            margin: 0 auto;
+        }
+        .title {
+            text-align: center;
+            font-size: 24px;
+            margin-top: 30px;
+        }
+        .image {
+            width: 70%;
+            max-height: 700px;
+            margin: 0 auto;
+            margin-top: 30px;
+        }
+        .button-container {
+            text-align: center;
+            margin-top: 30px;
+        }
+        .pay-button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            font-size: 16px;
+            border: none;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <img src="{% static 'images/logo_desenfoque.png' %}" alt="Logo Desenfoque" alt="Logo" class="logo">
+    </div>
+    <h1 class="title">Pago del Aviso</h1>
+    <img src="{% static 'images/medio.png' %}" alt="medios de ppago "alt="Imagen" class="image">
+    <div class="button-container">
+        <a href="http://127.0.0.1:8000/avisaje_app/listado/" class="pay-button">Pagar</a>
+    </div>
+</body>
+</html>
