@@ -17,7 +17,9 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 from . import views
-from .views import upload_file, cotizacion, pago_aviso, listado
+from .views import upload_file, cotizacion, pago_aviso, listado, iniciar_pago
+
+from django.urls import path
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -26,4 +28,8 @@ urlpatterns = [
     path('pago_aviso/', pago_aviso, name='pago_aviso'),
     path('listado/', listado, name='listado'),
     path('', cotizacion, name='cotizacion'),
+    path('buscar/', listado, name='buscar_aviso'),
+    path('iniciar_pago/', iniciar_pago, name='iniciar_pago'),
+    path('listado/', views.opciones, name='listado'),
+    path('descargar-pdf/<str:nombre_archivo>/', views.descargar_pdf, name='descargar_pdf')
 ]

@@ -1,7 +1,9 @@
 from django.contrib import admin
 
 from django.contrib import admin
-from .models import Cotizacion
+from .models import Cotizacion, Aviso
 
 admin.site.register(Cotizacion)
+
+admin.site.register(Aviso)
 

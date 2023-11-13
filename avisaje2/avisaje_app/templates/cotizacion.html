@@ -20,7 +20,7 @@
 
 
   <h1 class="text-center">Cotice AQUI su Aviso Legal en Segundos</h1>
-   <h4 class="display-7 text-center">Para cotizar suba su aviso en formato Word o escríbalo en el recuadro</h4>
+   <h4 class="display-7 text-center">Para cotizar, suba su aviso en formato Word, PDF o escríbalo en el recuadro</h4>
   <br><br>
 <div class="row justify-content-center">
   <div class="col-lg-6">
@@ -70,6 +70,10 @@
   </div>
 </div>
 
+
+
+
+
 <br><br>
 <div class="text-center">
   {% if messages %}
@@ -80,6 +84,27 @@
     </div>
   {% endif %}
 </div>
+
+<!---
+   <!DOCTYPE html>
+<html>
+<head>
+    <title>Verificación de Documento</title>
+</head>
+<body>
+    <h1>Verificación de Documento</h1>
+    <form method="post">
+        {% csrf_token %}
+        <label for="cve">Código CVE:</label>
+        <input type="text" id="cve" name="cve" required>
+        <button type="submit">Verificar</button>
+    </form>
+    {% if mensaje %}
+        <p>{{ mensaje }}</p>
+    {% endif %}
+</body>
+</html> -->
+
 
 <script>
   $(document).ready(function() {

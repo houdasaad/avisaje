@@ -4,12 +4,103 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz" crossorigin="anonymous"></script>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
-  <div class="text-center">
-    <img src="{% static 'images/logo_desenfoque.png' %}" alt="Logo" class="logo">
-  </div>
-<div class="text-center">
+
+<script src="https://cdn.jsdelivr.net/npm/pdfjs-lib@0.0.149/build/pdf.min.js"></script>
+
+
+ <style>
+.modal-content {
+  position: relative;
+  z-index: 1050;
+};
+</style>
+
+
+ <style>
+
+/* Estilos para las opciones del menú desplegable al pasar el cursor */
+.dropdown-content a {
+  color: black;
+  padding: 12px 16px;
+  text-decoration: none;
+  display: block;
+}
+
+/* Cambio de color de fondo de las opciones del menú desplegable al pasar el cursor */
+.dropdown-content a:hover {background-color: #f1f1f1}
+
+/* Mostrar las opciones del menú desplegable */
+.show {display:block;}
+ </style>
+
+<body>
+<div class="text-center my-4">
+  <img src="{% static 'images/logo_desenfoque.png' %}" alt="Logo" class="img-fluid logo">
   <h1>Listado de Avisos Legales</h1>
 </div>
+
+<div class="container">
+<form method="get" action="{% url 'buscar_aviso' %}" id="search-form" class="row g-3 my-4 justify-content-center">
+    <!-- campos de búsqueda -->
+    <div class="col-md-3">
+      <input type="text" name="q" placeholder="Buscar palabras..." class="form-control">
+    </div>
+    <div class="col-md-3">
+      <input type="date" name="start_date" class="form-control">
+    </div>
+    <div class="col-md-3">
+      <input type="date" name="end_date" class="form-control">
+    </div>
+
+
+    <!-- botón de búsqueda -->
+    <div class="col-md-3">
+      <button type="submit" class="btn btn-primary">Buscar</button>
+    </div>
+
+    <select id="categoriaFilter" onchange="filterTable()">
+    <option value="">Buscar por Categorías</option>
+    {% for categoria in CATEGORIA_CHOICES %}
+    <option value="{{ categoria.0 }}">{{ categoria.1 }}</option>
+    {% endfor %}
+</select>
+</form>
+
+
+
+</div>
+
+
+
+
+
+
+  <!-- Mostrar resultados -->
+  <div class="row row-cols-1 row-cols-md-3 g-4">
+    {% for aviso in avisos_list %}
+      <div class="col">
+        <div class="card h-100">
+          <div class="card-body">
+            <h5 class="card-title">{{ cotizacion.texto }}</h5>
+            <p class="card-text">{{ aviso.categoria }}</p>
+            <p class="card-text"><small class="text-muted">{{ cotizacion.fecha }}</small></p>
+          </div>
+        </div>
+      </div>
+{% if request.GET.q or request.GET.start_date or request.GET.end_date or request.GET.category %}
+  {% for aviso in avisos_list %}
+    <!-- Tarjetas para cada aviso -->
+  {% empty %}
+    <div class="col">
+      <p>No se encontraron avisos.</p>
+    </div>
+  {% endfor %}
+{% endif %}
+{% endfor %}
+  </div>
+</div>
+
+
 
 <div class="container">
   <div class="row justify-content-center">
@@ -28,27 +119,28 @@
             <td style="font-size: 12px;">{{ cotizacion.fecha }}</td>
             <td style="font-size: 12px;">{{ cotizacion.texto|truncatewords:50 }}</td>
             <td>
-              <button type="button" class="btn btn-primary" style="background-color: #167238; padding: 2px 5px;" data-toggle="modal" data-target="#avisomodal{{ cotizacion.id }}">Ver</button>
-              <a href="{{ cotizacion.archivo.url }}" class="btn btn-secondary" style="background-color: #1C8F46; padding: 2px 5px;" download>Descargar</a>
-              <div class="modal fade" id="avisomodal{{ cotizacion.id }}" tabindex="-1" role="dialog" aria-labelledby="avisomodal{{ cotizacion.id }}Label" aria-hidden="true">
+              <button type="button" class="btn btn-primary" style="background-color: #167238; padding: 2px 5px;" data-bs-toggle="modal" data-bs-target="#avisomodal{{ cotizacion.id }}">Ver</button>
+              <a href="{% url 'descargar_pdf' cotizacion.nombre_archivo %}" class="btn btn-secondary" style="background-color: #1C8F46; padding: 2px 5px;" download>Descargar</a>
+              <div class="modal fade" id="avisomodal{{ cotizacion.id }}" tabindex="-1" role="dialog" aria-labelledby="avisomodal{{ cotizacion.id }}Label" aria-hidden="true" data-nombre-archivo="{{ cotizacion.nombre_archivo }}">
                 <div class="modal-dialog modal-lg">
                   <div class="modal-content">
                     <div class="modal-header">
                       <h5 class="modal-title" id="avisomodal{{ cotizacion.id }}Label">Aviso</h5>
-                      <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                         <span aria-hidden="true">&times;</span>
                       </button>
                     </div>
                     <div class="modal-body">
-                      <p>{{ cotizacion.texto }}</p>
+                      <!-- Agrega un elemento div para el visor de PDF -->
+                      <div id="pdfViewer{{ cotizacion.id }}" style="height: 500px; width: 750px; overflow: auto;"></div>
                     </div>
                     <div class="modal-footer">
-                      <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
+                      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
                     </div>
                   </div>
                 </div>
               </div>
             </td>
+
           </tr>
           {% endfor %}
         </tbody>
@@ -57,3 +149,126 @@
   </div>
 </div>
 
+
+
+
+
+
+
+
+
+</body>
+
+<!-- BUSCA EN EL TEXO LIBRE Y FECHAS-->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('search-form').onsubmit = function(e) {
+        // Iterar sobre todos los elementos del formulario
+        var inputs = this.elements;
+        for (var i = 0; i < inputs.length; i++) {
+            // Si el campo está vacío, no incluirlo en la solicitud GET
+            if (inputs[i].name && !inputs[i].value) {
+                inputs[i].name = '';
+            }
+        }
+    };
+});
+</script>
+
+<!--            <td style="font-size: 12px;">{{ cotizacion.fecha }}</td>
+            <td style="font-size: 12px;">{{ cotizacion.texto|truncatewords:50 }}</td>
+            <td>
+              <button type="button" class="btn btn-primary" style="background-color: #167238; padding: 2px 5px;" data-bs-toggle="modal" data-bs-target="#avisomodal{{ cotizacion.id }}">Ver</button>
+              <a href="{{ cotizacion.archivo.url }}" class="btn btn-secondary" style="background-color: #1C8F46; padding: 2px 5px;" download>Descargar</a>
+              <div class="modal fade" id="avisomodal{{ cotizacion.id }}" tabindex="-1" role="dialog" aria-labelledby="avisomodal{{ cotizacion.id }}Label" aria-hidden="true">
+                <div class="modal-dialog modal-lg">
+                  <div class="modal-content">
+                    <div class="modal-header">
+                      <h5 class="modal-title" id="avisomodal{{ cotizacion.id }}Label">Aviso</h5>
+                      <button type="button" class="close" data-dismiss="modal" aria-label="">
+                        <span aria-hidden="true">&times;</span>
+                      </button>
+                    </div>
+                    <div class="modal-body">
+                      <p>{{ cotizacion.texto }}</p>
+                    </div>
+                    <div class="modal-footer">
+                      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </td>-->
+
+<script>
+$(document).ready(function() {
+  // Asegúrate de que el script de pdf.js se cargue antes de este script
+
+  // Agrega un evento al abrir cada modal
+  $('[id^=avisomodal]').on('show.bs.modal', function () {
+    var modalId = $(this).attr('id');
+    var pdfUrl = "/media/" + $(this).data('nombre-archivo');  // Ruta del PDF
+
+    // Obtén el elemento div del visor de PDF específico para este modal
+    var pdfViewer = document.getElementById('pdfViewer' + modalId.replace('avisomodal', ''));
+
+    // Limpia el contenido anterior del visor de PDF
+    pdfViewer.innerHTML = '';
+
+    // Carga y muestra el PDF
+    loadAndRenderPdf(pdfUrl, pdfViewer);
+  });
+
+  // Función para cargar y mostrar el PDF en el visor
+  function loadAndRenderPdf(url, viewer) {
+    var pdfjsLib = window['pdfjs-dist/build/pdf'];
+    pdfjsLib.getDocument(url).promise.then(function (pdfDoc) {
+      // Carga la primera página del PDF
+      pdfDoc.getPage(1).then(function (page) {
+        var scale = 1.5;
+        var viewport = page.getViewport({ scale: scale });
+
+        // Crea un lienzo para renderizar la página
+        var canvas = document.createElement('canvas');
+        var context = canvas.getContext('2d');
+        canvas.height = viewport.height;
+        canvas.width = viewport.width;
+
+        // Renderiza la página en el lienzo
+        var renderContext = {
+          canvasContext: context,
+          viewport: viewport
+        };
+        page.render(renderContext).promise.then(function () {
+          // Agrega el lienzo al visor de PDF
+          viewer.appendChild(canvas);
+        });
+      });
+    });
+  }
+});
+</script>
+
+
+
+
+
+<!-- filtra las categorias-->
+<script>
+function filterTable() {
+    var filterValue = document.getElementById("categoriaFilter").value;
+    var table = document.getElementById("yourTableId"); // Reemplaza con el ID de tu tabla
+    var tr = table.getElementsByTagName("tr");
+
+    for (var i = 0; i < tr.length; i++) {
+        var td = tr[i].getElementsByTagName("td")[yourCategoryColumnIndex]; // Reemplaza con el índice de la columna de categoría
+        if (td) {
+            if (td.innerHTML.toUpperCase().indexOf(filterValue.toUpperCase()) > -1 || filterValue == "") {
+                tr[i].style.display = "";
+            } else {
+                tr[i].style.display = "none";
+            }
+        }
+    }
+}
+</script>
