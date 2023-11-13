@@ -26,7 +26,7 @@ SECRET_KEY = 'django-insecure-8tl@s=q_w+e_5u$gw)_i_c57m0h&$sz!p!ltx5#m3&0&qm90+z
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = [ ]
+ALLOWED_HOSTS = ['*']
 
 # Configura la ruta de almacenamiento personalizada
 media_storage = FileSystemStorage(location=os.path.join(BASE_DIR, 'media'), base_url='/media/')
