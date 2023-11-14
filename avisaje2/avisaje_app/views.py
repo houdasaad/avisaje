@@ -253,8 +253,8 @@ def iniciar_pago(request):
     costo = request.session.get('costo', 0)
 
     #Variables globales
-    API_URL = r'https://api-prod01.etpayment.com/'
-    PTM_URL = r'https://pmt-01.etpayment.com/'
+    API_URL = r'https://api-prod01.etpayment.com'
+    PTM_URL = r'https://pmt-01.etpayment.com'
     INIT_API = r'/session/initialize'
     MERCHANT_CODE = "cl_desenfoque"
     MERCHANT_API_TOKEN = "IITurcPfTCqRUamXzBOhNikvC1YgVp6FetxDpAgPIzyBmYBojRQHr073cAX1iPhX"
