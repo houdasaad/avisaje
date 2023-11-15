@@ -140,12 +140,12 @@ def cotizacion(request):
         email = request.POST.get('email')
         text = request.POST.get('text')
         file = request.FILES.get('file')
-        storage = FileSystemStorage(
-            location=settings.MEDIA_ROOT)  # Utiliza la configuración de almacenamiento personalizada
-        filename = storage.save(file.name, file)
 
-        if file:  # Si se subió un archivo
-            print(file)
+
+        if file:  # Verifica si hay un archivo
+            storage = FileSystemStorage(location=settings.MEDIA_ROOT)
+            filename = storage.save(file.name, file)
+
             if file.name.endswith('.pdf'):
                 pdf_filename = file.name
                 aviso = Aviso(nombre_archivo=pdf_filename)
@@ -154,15 +154,14 @@ def cotizacion(request):
 
             elif file.name.endswith('.doc') or file.name.endswith('.docx'):
                 text = process(file)  # Procesar otros tipos de archivo (como Word)
-                pdf_filename = file.name
-                convert_word_to_pdf(file)
-                aviso = Aviso(nombre_archivo=file.name +'.pdf')
+                pdf_filename=convert_word_to_pdf(file)
+                aviso = Aviso(nombre_archivo=pdf_filename)
                 aviso.save()
 
                 # Si el request es texto, convertir a PDF
         elif text:
             pdf_filename = f"Aviso_{random.randint(1, 34564)}.pdf"
-            convert_text_to_pdf(text)
+            convert_text_to_pdf(text, pdf_filename)
 
 
 
@@ -174,7 +173,7 @@ def cotizacion(request):
         word_count = len(text.split())
 
         # Calcular el costo
-        costo = word_count * 164
+        costo = word_count * 80
         request.session['costo'] = costo
 
         cotizacion = Cotizacion(email=email, texto=text, cantidad_palabras=word_count, costo=costo, nombre_archivo=pdf_filename)

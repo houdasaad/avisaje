@@ -27,13 +27,13 @@ def convert_word_to_pdf(file):
     os.remove('media/tmp.docx')
 
     # Devolver la ubicación del archivo PDF convertido
-    return f'media/{pdf_name}'
+    return pdf_name
 
 
 
-def convert_text_to_pdf(text):
+def convert_text_to_pdf(text, name):
     # Crear el archivo PDF
-    pdf_path = os.path.join(settings.MEDIA_ROOT, 'converted.pdf')
+    pdf_path = os.path.join(settings.MEDIA_ROOT, name)
     c = canvas.Canvas(pdf_path, pagesize=letter)
 
     # Configurar el formato del texto en el PDF
