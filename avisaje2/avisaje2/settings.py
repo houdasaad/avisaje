@@ -175,7 +175,7 @@ DEFAULT_FROM_EMAIL = "smartanalytics@smartanalytic.cl"
 
 STATIC_URL = "/static/"
 STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, "avisaje_app/static"),
+    os.path.join(BASE_DIR, "avisaje_app", "static"),
 ]
 
 

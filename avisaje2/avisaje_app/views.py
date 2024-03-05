@@ -14,6 +14,7 @@ from datetime import datetime
 from django.utils import timezone
 import random
 from .utils import (
+    convert_pdf_to_image,
     convert_word_to_pdf,
     convert_text_to_pdf,
 )  # Asegúrate de tener estas funciones en utils.py
@@ -345,6 +346,80 @@ def descargar_pdf(request, nombre_archivo):
             pdf_file = open(pdf_path, "rb")
             response = FileResponse(pdf_file)
             response["Content-Disposition"] = f'attachment; filename="{nombre_archivo}"'
+            return response
+        except FileNotFoundError:
+            return HttpResponse("Archivo no encontrado", status=404)
+    else:
+        # Maneja el caso en el que el nombre_archivo está vacío
+        return HttpResponse("El nombre del archivo no es válido", status=400)
+
+
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import letter
+from datetime import datetime
+from pdf2image import convert_from_path
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import A4
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Image, Spacer
+from reportlab.lib.styles import getSampleStyleSheet
+import datetime
+import locale
+
+
+def descargar_certificado(request, nombre_archivo):
+    if nombre_archivo:
+        pdf_path = os.path.join(settings.MEDIA_ROOT, nombre_archivo)
+        nuevo_pdf_path = os.path.join(settings.MEDIA_ROOT, "nuevo_certificado.pdf")
+        aviso = Aviso.objects.get(nombre_archivo=nombre_archivo)
+
+        # para que el mes salga en español
+        locale.setlocale(locale.LC_TIME, 'es_ES.UTF-8')
+        fecha_actual = datetime.datetime.now()
+        # para eliminar el cero a la izquierda (ej: 05 de marzo de 2024)
+        dia = str(fecha_actual.day)
+        fecha_actual_formateada = f"{dia} de {fecha_actual.strftime('%B')} de {fecha_actual.year}"
+
+        fecha_aviso = aviso.fecha_aviso
+        dia = str(fecha_aviso.day)
+        fecha_aviso_formateada = f"{dia} de {fecha_aviso.strftime('%B')} de {fecha_aviso.year}"
+        ancho_imagen = A4[0]-72*2  # Mantener relación de aspecto
+        alto_imagen = ancho_imagen * 4/3
+
+        # Convertir el PDF a imágenes
+        imagenes_count = convert_pdf_to_image(pdf_path)
+        # imagenes = convert_from_path(pdf_path)
+
+        # Crear un nuevo PDF
+        doc = SimpleDocTemplate(nuevo_pdf_path, pagesize=A4)
+        story = []
+        styles = getSampleStyleSheet()
+
+        # Encabezado
+        story.append(Paragraph("CERTIFICADO DE PUBLICACIÓN LEGAL", styles['Heading2']))
+
+        # Insertar imágenes como párrafos
+        for i in range(imagenes_count):
+            image_path = os.path.join(settings.MEDIA_ROOT, f'imagen_{i}.png')
+            story.append(Image(image_path, width=ancho_imagen, height=alto_imagen))
+            # story.append(Spacer(1, 2))
+
+        # Texto de conclusión
+        texto_conclusion = f"El contenido de este texto ha estado publicado en la página de aviso legales de DESENFOQUE.CL durante los días {fecha_aviso_formateada} al {fecha_actual_formateada} y estará disponible en el repositorio digital de la Biblioteca Nacional de acuerdo a lo que establece la ley."
+        story.append(Paragraph(texto_conclusion, styles['Normal']))
+        story.append(Spacer(1, 7))
+
+        logo_path = os.path.join(settings.STATICFILES_DIRS[0],'avisaje_app', 'images', 'logo_desenfoque.png')
+        ancho_logo = 300
+        alto_logo = ancho_logo * 0.13
+        story.append(Image(logo_path, width=ancho_logo, height=alto_logo))
+
+        # Construir el PDF
+        doc.build(story)
+        try:
+            pdf_file = open(nuevo_pdf_path, "rb")
+            response = FileResponse(pdf_file)
+            nombre, _ = nombre_archivo.split('.')
+            response["Content-Disposition"] = f'attachment; filename="{nombre}_certificado.pdf"'
             return response
         except FileNotFoundError:
             return HttpResponse("Archivo no encontrado", status=404)

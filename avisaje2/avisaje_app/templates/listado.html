@@ -120,8 +120,11 @@
             <td style="font-size: 12px;">{{ cotizacion.fecha }}</td>
             <td style="font-size: 12px;">{{ cotizacion.texto|truncatewords:50 }}</td>
             <td>
-              <button type="button" class="btn btn-primary" style="background-color: #167238; padding: 2px 5px;" data-bs-toggle="modal" data-bs-target="#avisomodal{{ cotizacion.id }}">Ver</button>
-              <a href="{% url 'descargar_pdf' cotizacion.nombre_archivo %}" class="btn btn-secondary" style="background-color: #1C8F46; padding: 2px 5px;" download>Descargar</a>
+              <div>
+                <button type="button" class="btn btn-primary" style="background-color: #167238; padding: 2px 5px;" data-bs-toggle="modal" data-bs-target="#avisomodal{{ cotizacion.id }}">Ver</button>
+                <a href="{% url 'descargar_pdf' cotizacion.nombre_archivo %}" class="btn btn-secondary" style="background-color: #1C8F46; padding: 2px 5px;" download>Descargar</a>
+                <a href="{% url 'descargar_certificado' cotizacion.nombre_archivo %}" class="btn btn-secondary" style="background-color: #1C8F46; padding: 2px 5px;" download>Certificado</a>
+              </div>
               <div class="modal fade" id="avisomodal{{ cotizacion.id }}" tabindex="-1" role="dialog" aria-labelledby="avisomodal{{ cotizacion.id }}Label" aria-hidden="true" data-nombre-archivo="{{ cotizacion.nombre_archivo }}">
                 <div class="modal-dialog modal-lg">
                   <div class="modal-content">
