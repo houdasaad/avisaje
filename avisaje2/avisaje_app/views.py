@@ -13,7 +13,10 @@ from django.contrib import messages
 from datetime import datetime
 from django.utils import timezone
 import random
-from .utils import convert_word_to_pdf, convert_text_to_pdf  # Asegúrate de tener estas funciones en utils.py
+from .utils import (
+    convert_word_to_pdf,
+    convert_text_to_pdf,
+)  # Asegúrate de tener estas funciones en utils.py
 
 import pytz
 from django.conf import settings
@@ -44,8 +47,8 @@ import PyPDF2
 
 
 def upload_file(request):
-    if request.method == 'POST' and request.FILES['file']:
-        file = request.FILES['file']
+    if request.method == "POST" and request.FILES["file"]:
+        file = request.FILES["file"]
 
         # Guardar el archivo Word
         fs = FileSystemStorage()
@@ -58,7 +61,7 @@ def upload_file(request):
         pdf_file_path = convert_to_pdf(word_file_path)
 
         # Generar el código CVE
-        with open(pdf_file_path, 'rb') as pdf_file:
+        with open(pdf_file_path, "rb") as pdf_file:
             pdf_content = pdf_file.read()
             pdf_hash = hashlib.sha256(pdf_content).hexdigest()
         cve = f"CVE-{pdf_hash[:8]}-{pdf_hash[8:16]}-{pdf_hash[16:24]}-{pdf_hash[24:32]}"
@@ -66,16 +69,17 @@ def upload_file(request):
         # Agregar firma digital
         signed_pdf_path = add_signature(pdf_file_path, cve)
 
-        return render(request, 'success.html', {'signed_pdf_path': signed_pdf_path})
+        return render(request, "success.html", {"signed_pdf_path": signed_pdf_path})
 
-    return render(request, 'upload.html')
+    return render(request, "upload.html")
 
 
 from docx2pdf import convert
 
+
 def convert_to_pdf(word_file_path):
     # Ruta del archivo PDF generado
-    pdf_file_path = word_file_path.replace('.docx', '.pdf')
+    pdf_file_path = word_file_path.replace(".docx", ".pdf")
 
     # Convertir el archivo Word a PDF
     convert(word_file_path, pdf_file_path)
@@ -84,12 +88,11 @@ def convert_to_pdf(word_file_path):
     return pdf_file_path
 
 
-
 def add_signature(pdf_file_path, cve):
-    signed_pdf_path = pdf_file_path.replace('.pdf', '_signed.pdf')
+    signed_pdf_path = pdf_file_path.replace(".pdf", "_signed.pdf")
 
     # Cálculo del hash del archivo PDF firmado
-    with open(pdf_file_path, 'rb') as pdf_file:
+    with open(pdf_file_path, "rb") as pdf_file:
         pdf_content = pdf_file.read()
         pdf_hash = hashlib.sha256(pdf_content).hexdigest()
 
@@ -98,7 +101,7 @@ def add_signature(pdf_file_path, cve):
 
     # Código para agregar una firma digital al archivo PDF
     pdf_writer = PdfFileWriter()
-    pdf_reader = PdfFileReader(open(pdf_file_path, 'rb'))
+    pdf_reader = PdfFileReader(open(pdf_file_path, "rb"))
 
     for page_number in range(pdf_reader.getNumPages()):
         page = pdf_reader.getPage(page_number)
@@ -114,11 +117,9 @@ def add_signature(pdf_file_path, cve):
     # Retornar la ruta del archivo PDF con la firma digital y el CVE
     return signed_pdf_path
 
+
 def pago_aviso(request):
-    return render(request, 'pago_aviso.html')
-
-
-
+    return render(request, "pago_aviso.html")
 
 
 def extract_text_from_pdf(pdf_file):
@@ -134,27 +135,25 @@ def extract_text_from_pdf(pdf_file):
         return str(e)
 
 
-
 def cotizacion(request):
-    if request.method == 'POST':
-        email = request.POST.get('email')
-        text = request.POST.get('text')
-        file = request.FILES.get('file')
-
+    if request.method == "POST":
+        email = request.POST.get("email")
+        text = request.POST.get("text")
+        file = request.FILES.get("file")
 
         if file:  # Verifica si hay un archivo
             storage = FileSystemStorage(location=settings.MEDIA_ROOT)
             filename = storage.save(file.name, file)
 
-            if file.name.endswith('.pdf'):
+            if file.name.endswith(".pdf"):
                 pdf_filename = file.name
                 aviso = Aviso(nombre_archivo=pdf_filename)
                 aviso.save()
                 text = extract_text_from_pdf(file)
 
-            elif file.name.endswith('.doc') or file.name.endswith('.docx'):
+            elif file.name.endswith(".doc") or file.name.endswith(".docx"):
                 text = process(file)  # Procesar otros tipos de archivo (como Word)
-                pdf_filename=convert_word_to_pdf(file)
+                pdf_filename = convert_word_to_pdf(file)
                 aviso = Aviso(nombre_archivo=pdf_filename)
                 aviso.save()
 
@@ -163,10 +162,6 @@ def cotizacion(request):
             pdf_filename = f"Aviso_{random.randint(1, 34564)}.pdf"
             convert_text_to_pdf(text, pdf_filename)
 
-
-
-
-
         # Resto de tu lógica aquí
 
         # Contar las palabras del texto
@@ -174,14 +169,20 @@ def cotizacion(request):
 
         # Calcular el costo
         costo = word_count * 80
-        request.session['costo'] = costo
+        request.session["costo"] = costo
 
-        cotizacion = Cotizacion(email=email, texto=text, cantidad_palabras=word_count, costo=costo, nombre_archivo=pdf_filename)
+        cotizacion = Cotizacion(
+            email=email,
+            texto=text,
+            cantidad_palabras=word_count,
+            costo=costo,
+            nombre_archivo=pdf_filename,
+        )
         cotizacion.save()
 
         # Enviar el email
-        subject = 'Cotización de Avisaje Legal'
-        message = f'''
+        subject = "Cotización de Avisaje Legal"
+        message = f"""
             <div style="text-align: center;">
                 <p>Estimado cliente,</p>
                 <p>El costo de su aviso es de <strong>${costo}</strong>.</p>
@@ -193,20 +194,18 @@ def cotizacion(request):
                 <p>Atentamente,</p>
                 <p><em>El Equipo de [Nombre de la Empresa]</em></p>
             </div>
-        '''
+        """
 
-        send_mail(subject, '', settings.DEFAULT_FROM_EMAIL, [email], html_message=message)
+        send_mail(
+            subject, "", settings.DEFAULT_FROM_EMAIL, [email], html_message=message
+        )
 
-        messages.success(request, 'Su cotización fue enviada a su email.')
+        messages.success(request, "Su cotización fue enviada a su email.")
 
-    return render(request, 'cotizacion.html')
-
-
-
+    return render(request, "cotizacion.html")
 
 
 from .models import Cotizacion
-
 
 
 from django.shortcuts import render
@@ -214,65 +213,72 @@ from .models import Aviso
 from django.db.models import Q
 from datetime import datetime
 
+
 def listado(request):
     # Comenzar con todas las cotizaciones
-    cotizaciones_list = Cotizacion.objects.order_by('-fecha')
+    cotizaciones_list = Cotizacion.objects.order_by("-fecha")
 
     # Búsqueda por palabras en el texto de cotización
-    text_query = request.GET.get('q')
+    text_query = request.GET.get("q")
     if text_query:
         cotizaciones_list = cotizaciones_list.filter(texto__icontains=text_query)
 
     # Búsqueda por rango de fechas
-    start_date = request.GET.get('start_date')
-    end_date = request.GET.get('end_date')
+    start_date = request.GET.get("start_date")
+    end_date = request.GET.get("end_date")
     if start_date and end_date:
         start_date = datetime.strptime(start_date, "%Y-%m-%d").replace(tzinfo=pytz.UTC)
         end_date = datetime.strptime(end_date, "%Y-%m-%d").replace(tzinfo=pytz.UTC)
-        cotizaciones_list = cotizaciones_list.filter(fecha__range=(start_date, end_date))
+        cotizaciones_list = cotizaciones_list.filter(
+            fecha__range=(start_date, end_date)
+        )
 
     # Búsqueda por categoría
-    category_query = request.GET.get('category')
+    category_query = request.GET.get("category")
     if category_query:
         cotizaciones_list = cotizaciones_list.filter(categoria=category_query)
 
     # Puedes añadir aquí más filtros si es necesario
 
     # Renderizar el mismo template con las cotizaciones filtradas o todas
-    return render(request, 'listado.html', {'cotizaciones': cotizaciones_list})
+    return render(request, "listado.html", {"cotizaciones": cotizaciones_list})
 
 
 from django.shortcuts import redirect
 import requests
-'''
+
+"""
 Request simple a la API,
 que redirecciona a la pagina de pago.
-'''
+"""
+
+
 def iniciar_pago(request):
-    costo = request.session.get('costo', 0)
+    costo = request.session.get("costo", 0)
 
-    #Variables globales
-    API_URL = r'https://api-prod01.etpayment.com'
-    PTM_URL = r'https://pmt-01.etpayment.com'
-    INIT_API = r'/session/initialize'
+    # Variables globales
+    API_URL = r"https://api-prod01.etpayment.com"
+    PTM_URL = r"https://pmt-01.etpayment.com"
+    INIT_API = r"/session/initialize"
     MERCHANT_CODE = "cl_desenfoque"
-    MERCHANT_API_TOKEN = "IITurcPfTCqRUamXzBOhNikvC1YgVp6FetxDpAgPIzyBmYBojRQHr073cAX1iPhX"
-
+    MERCHANT_API_TOKEN = (
+        "IITurcPfTCqRUamXzBOhNikvC1YgVp6FetxDpAgPIzyBmYBojRQHr073cAX1iPhX"
+    )
 
     request_data = {
         "merchant_code": MERCHANT_CODE,
         "merchant_api_token": MERCHANT_API_TOKEN,
-        "merchant_order_id": "order-1992", #id de orden de compra propio del comercio
-        "order_amount" : costo,
+        "merchant_order_id": "order-1992",  # id de orden de compra propio del comercio
+        "order_amount": costo,
     }
 
-    #Obtención de session token
+    # Obtención de session token
 
-    resp = requests.post(API_URL+INIT_API, json=request_data)
+    resp = requests.post(API_URL + INIT_API, json=request_data)
     if resp.status_code == 200:
-        token = resp.json()['token']
+        token = resp.json()["token"]
 
-        payment_url = PTM_URL + '/session/' + token
+        payment_url = PTM_URL + "/session/" + token
 
         # En lugar de usar webbrowser, redirigimos al cliente con Django
         return redirect(payment_url)
@@ -280,25 +286,28 @@ def iniciar_pago(request):
         # Manejar errores aquí
         pass
 
-    #Se lanza sesión del cliente
-    #webbrowser.open(PTM_URL+'/session/'+token)
+    # Se lanza sesión del cliente
+    # webbrowser.open(PTM_URL+'/session/'+token)
+
 
 from django.shortcuts import render
 from .models import Aviso
+
 
 def opciones(request):
     categoria_choices = Aviso.CATEGORIA_CHOICES
 
     # Aquí puedes añadir más lógica según necesites
 
-    return render(request, 'listado.html', {'categoria_choices': categoria_choices})
+    return render(request, "listado.html", {"categoria_choices": categoria_choices})
 
 
 from django.shortcuts import render
 
+
 def verificar_documento(request):
-    if request.method == 'POST':
-        cve = request.POST.get('cve')
+    if request.method == "POST":
+        cve = request.POST.get("cve")
 
         # Realiza la verificación del código CVE aquí
         # Puedes buscar en tu base de datos si tienes un registro con el mismo CVE
@@ -309,9 +318,10 @@ def verificar_documento(request):
         else:
             mensaje = "El documento no es auténtico o el código CVE es incorrecto."
 
-        return render(request, 'verificacion.html', {'mensaje': mensaje})
+        return render(request, "verificacion.html", {"mensaje": mensaje})
 
-    return render(request, 'verificacion.html', {})
+    return render(request, "verificacion.html", {})
+
 
 from django.http import HttpResponse
 
@@ -323,6 +333,7 @@ from django.http import FileResponse, HttpResponse
 from django.conf import settings
 import os
 
+
 def descargar_pdf(request, nombre_archivo):
     # Verifica que el nombre_archivo no esté vacío
     if nombre_archivo:
@@ -331,14 +342,12 @@ def descargar_pdf(request, nombre_archivo):
 
         # Abre el archivo y devuelve una respuesta de archivo
         try:
-            pdf_file = open(pdf_path, 'rb')
+            pdf_file = open(pdf_path, "rb")
             response = FileResponse(pdf_file)
-            response['Content-Disposition'] = f'attachment; filename="{nombre_archivo}"'
+            response["Content-Disposition"] = f'attachment; filename="{nombre_archivo}"'
             return response
         except FileNotFoundError:
             return HttpResponse("Archivo no encontrado", status=404)
     else:
         # Maneja el caso en el que el nombre_archivo está vacío
         return HttpResponse("El nombre del archivo no es válido", status=400)
-
-

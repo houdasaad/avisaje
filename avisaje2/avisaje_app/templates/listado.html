@@ -35,7 +35,8 @@
 
 <body>
 <div class="text-center my-4">
-  <img src="{% static 'images/logo_desenfoque.png' %}" alt="Logo" class="img-fluid logo">
+  {% load static %}
+  <img src="{% static 'avisaje_app/images/logo_desenfoque.png' %}" alt="Logo" class="img-fluid logo">
   <h1>Listado de Avisos Legales</h1>
 </div>
 
@@ -207,7 +208,9 @@ $(document).ready(function() {
   // Agrega un evento al abrir cada modal
   $('[id^=avisomodal]').on('show.bs.modal', function () {
     var modalId = $(this).attr('id');
-    var pdfUrl = "/media/" + $(this).data('nombre-archivo');  // Ruta del PDF
+    var pdfUrl = `/media/${$(this).data('nombre-archivo')}`;  // Ruta del PDF
+    console.log('PDF URL:', pdfUrl);
+
 
     // Obtén el elemento div del visor de PDF específico para este modal
     var pdfViewer = document.getElementById('pdfViewer' + modalId.replace('avisomodal', ''));
