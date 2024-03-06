@@ -77,21 +77,21 @@
 
 
   <!-- Mostrar resultados -->
-  <div class="row row-cols-1 row-cols-md-3 g-4">
+  <!-- <div class="row row-cols-1 row-cols-md-3 g-4">
     {% for aviso in avisos_list %}
       <div class="col">
         <div class="card h-100">
           <div class="card-body">
-            <h5 class="card-title">{{ cotizacion.texto }}</h5>
+            <h5 class="card-title">{{ aviso.text_aviso }}</h5>
             <p class="card-text">{{ aviso.categoria }}</p>
-            <p class="card-text"><small class="text-muted">{{ cotizacion.fecha }}</small></p>
+            <p class="card-text"><small class="text-muted">{{ aviso.fecha_aviso }}</small></p>
           </div>
         </div>
       </div>
 {% if request.GET.q or request.GET.start_date or request.GET.end_date or request.GET.category %}
   {% for aviso in avisos_list %}
     <!-- Tarjetas para cada aviso -->
-  {% empty %}
+  <!-- {% empty %}
     <div class="col">
       <p>No se encontraron avisos.</p>
     </div>
@@ -99,7 +99,7 @@
 {% endif %}
 {% endfor %}
   </div>
-</div>
+</div> --> 
 
 
 
@@ -115,27 +115,27 @@
           </tr>
         </thead>
         <tbody>
-          {% for cotizacion in cotizaciones %}
+          {% for aviso in avisos_list %}
           <tr>
-            <td style="font-size: 12px;">{{ cotizacion.fecha }}</td>
-            <td style="font-size: 12px;">{{ cotizacion.texto|truncatewords:50 }}</td>
+            <td style="font-size: 12px;">{{ aviso.fecha_aviso }}</td>
+            <td style="font-size: 12px;">{{ aviso.text_aviso|truncatewords:50 }}</td>
             <td>
               <div>
-                <button type="button" class="btn btn-primary" style="background-color: #167238; padding: 2px 5px;" data-bs-toggle="modal" data-bs-target="#avisomodal{{ cotizacion.id }}">Ver</button>
-                <a href="{% url 'descargar_pdf' cotizacion.nombre_archivo %}" class="btn btn-secondary" style="background-color: #1C8F46; padding: 2px 5px;" download>Descargar</a>
-                <a href="{% url 'descargar_certificado' cotizacion.nombre_archivo %}" class="btn btn-secondary" style="background-color: #1C8F46; padding: 2px 5px;" download>Certificado</a>
+                <button type="button" class="btn btn-primary" style="background-color: #167238; padding: 2px 5px;" data-bs-toggle="modal" data-bs-target="#avisomodal{{ aviso.id }}">Ver</button>
+                <a href="{% url 'descargar_pdf' aviso.nombre_archivo %}" class="btn btn-secondary" style="background-color: #1C8F46; padding: 2px 5px;" download>Descargar</a>
+                <a href="{% url 'descargar_certificado' aviso.id %}" class="btn btn-secondary" style="background-color: #1C8F46; padding: 2px 5px;" download>Certificado</a>
               </div>
-              <div class="modal fade" id="avisomodal{{ cotizacion.id }}" tabindex="-1" role="dialog" aria-labelledby="avisomodal{{ cotizacion.id }}Label" aria-hidden="true" data-nombre-archivo="{{ cotizacion.nombre_archivo }}">
+              <div class="modal fade" id="avisomodal{{ aviso.id }}" tabindex="-1" role="dialog" aria-labelledby="avisomodal{{ aviso.id }}Label" aria-hidden="true" data-nombre-archivo="{{ aviso.nombre_archivo }}">
                 <div class="modal-dialog modal-lg">
                   <div class="modal-content">
                     <div class="modal-header">
-                      <h5 class="modal-title" id="avisomodal{{ cotizacion.id }}Label">Aviso</h5>
+                      <h5 class="modal-title" id="avisomodal{{ aviso.id }}Label">Aviso</h5>
                         <span aria-hidden="true">&times;</span>
                       </button>
                     </div>
                     <div class="modal-body">
                       <!-- Agrega un elemento div para el visor de PDF -->
-                      <div id="pdfViewer{{ cotizacion.id }}" style="height: 500px; width: 750px; overflow: auto;"></div>
+                      <div id="pdfViewer{{ aviso.id }}" style="height: 500px; width: 750px; overflow: auto;"></div>
                     </div>
                     <div class="modal-footer">
                       <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
@@ -179,22 +179,22 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 
-<!--            <td style="font-size: 12px;">{{ cotizacion.fecha }}</td>
-            <td style="font-size: 12px;">{{ cotizacion.texto|truncatewords:50 }}</td>
+<!--            <td style="font-size: 12px;">{{ aviso.fecha }}</td>
+            <td style="font-size: 12px;">{{ aviso.texto|truncatewords:50 }}</td>
             <td>
-              <button type="button" class="btn btn-primary" style="background-color: #167238; padding: 2px 5px;" data-bs-toggle="modal" data-bs-target="#avisomodal{{ cotizacion.id }}">Ver</button>
-              <a href="{{ cotizacion.archivo.url }}" class="btn btn-secondary" style="background-color: #1C8F46; padding: 2px 5px;" download>Descargar</a>
-              <div class="modal fade" id="avisomodal{{ cotizacion.id }}" tabindex="-1" role="dialog" aria-labelledby="avisomodal{{ cotizacion.id }}Label" aria-hidden="true">
+              <button type="button" class="btn btn-primary" style="background-color: #167238; padding: 2px 5px;" data-bs-toggle="modal" data-bs-target="#avisomodal{{ aviso.id }}">Ver</button>
+              <a href="{{ aviso.archivo.url }}" class="btn btn-secondary" style="background-color: #1C8F46; padding: 2px 5px;" download>Descargar</a>
+              <div class="modal fade" id="avisomodal{{ aviso.id }}" tabindex="-1" role="dialog" aria-labelledby="avisomodal{{ aviso.id }}Label" aria-hidden="true">
                 <div class="modal-dialog modal-lg">
                   <div class="modal-content">
                     <div class="modal-header">
-                      <h5 class="modal-title" id="avisomodal{{ cotizacion.id }}Label">Aviso</h5>
+                      <h5 class="modal-title" id="avisomodal{{ aviso.id }}Label">Aviso</h5>
                       <button type="button" class="close" data-dismiss="modal" aria-label="">
                         <span aria-hidden="true">&times;</span>
                       </button>
                     </div>
                     <div class="modal-body">
-                      <p>{{ cotizacion.texto }}</p>
+                      <p>{{ aviso.texto }}</p>
                     </div>
                     <div class="modal-footer">
                       <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>

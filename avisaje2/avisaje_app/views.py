@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect
-from PyPDF2 import PdfFileWriter, PdfFileReader
+from PyPDF2 import PdfFileWriter, PdfReader
 from reportlab.pdfgen import canvas
 from django.core.files.storage import FileSystemStorage
 import hashlib
@@ -102,17 +102,17 @@ def add_signature(pdf_file_path, cve):
 
     # Código para agregar una firma digital al archivo PDF
     pdf_writer = PdfFileWriter()
-    pdf_reader = PdfFileReader(open(pdf_file_path, "rb"))
+    pdf_reader = PdfReader(open(pdf_file_path, "rb"))
 
-    for page_number in range(pdf_reader.getNumPages()):
-        page = pdf_reader.getPage(page_number)
+    for page_number in range(len(pdf_reader.pages)):
+        page = pdf_reader.pages[page_number]
         page.mergePage(page)
         pdf_writer.addPage(page)
 
     # Agregar el código CVE al final del PDF
     c = canvas.Canvas(signed_pdf_path)
     c.setFont("Helvetica", 10)
-    c.drawString(10, 10, f"Codigo de Verificacion: CVE={cve}")
+    c.drawString(10, 10, f"Código de Verificación: CVE={cve}")
     c.save()
 
     # Retornar la ruta del archivo PDF con la firma digital y el CVE
@@ -123,13 +123,14 @@ def pago_aviso(request):
     return render(request, "pago_aviso.html")
 
 
+
 def extract_text_from_pdf(pdf_file):
     try:
-        pdf_reader = PyPDF2.PdfFileReader(pdf_file)
+        pdf_reader = PyPDF2.PdfReader(pdf_file)
         text = ""
-        for page_number in range(pdf_reader.getNumPages()):
-            page = pdf_reader.getPage(page_number)
-            text += page.extractText()
+        for page_number in range(len(pdf_reader.pages)):
+            page = pdf_reader.pages[page_number]
+            text += page.extract_text()
         return text
     except Exception as e:
         # Maneja las excepciones que puedan ocurrir al procesar el PDF
@@ -148,15 +149,11 @@ def cotizacion(request):
 
             if file.name.endswith(".pdf"):
                 pdf_filename = file.name
-                aviso = Aviso(nombre_archivo=pdf_filename)
-                aviso.save()
                 text = extract_text_from_pdf(file)
 
             elif file.name.endswith(".doc") or file.name.endswith(".docx"):
                 text = process(file)  # Procesar otros tipos de archivo (como Word)
                 pdf_filename = convert_word_to_pdf(file)
-                aviso = Aviso(nombre_archivo=pdf_filename)
-                aviso.save()
 
                 # Si el request es texto, convertir a PDF
         elif text:
@@ -215,14 +212,44 @@ from django.db.models import Q
 from datetime import datetime
 
 
-def listado(request):
-    # Comenzar con todas las cotizaciones
-    cotizaciones_list = Cotizacion.objects.order_by("-fecha")
+# def listado(request):
+#     # Comenzar con todas las cotizaciones
+#     cotizaciones_list = Cotizacion.objects.order_by("-fecha")
 
-    # Búsqueda por palabras en el texto de cotización
+#     # Búsqueda por palabras en el texto de cotización
+#     text_query = request.GET.get("q")
+#     if text_query:
+#         cotizaciones_list = cotizaciones_list.filter(texto__icontains=text_query)
+
+#     # Búsqueda por rango de fechas
+#     start_date = request.GET.get("start_date")
+#     end_date = request.GET.get("end_date")
+#     if start_date and end_date:
+#         start_date = datetime.strptime(start_date, "%Y-%m-%d").replace(tzinfo=pytz.UTC)
+#         end_date = datetime.strptime(end_date, "%Y-%m-%d").replace(tzinfo=pytz.UTC)
+#         cotizaciones_list = cotizaciones_list.filter(
+#             fecha__range=(start_date, end_date)
+#         )
+
+#     # Búsqueda por categoría
+#     category_query = request.GET.get("category")
+#     if category_query:
+#         cotizaciones_list = cotizaciones_list.filter(categoria=category_query)
+
+#     # Puedes añadir aquí más filtros si es necesario
+
+#     # Renderizar el mismo template con las cotizaciones filtradas o todas
+#     return render(request, "listado.html", {"cotizaciones": cotizaciones_list})
+
+def listado(request):
+    # Comenzar con todos los avisos
+    avisos_list = Aviso.objects.order_by("-fecha_aviso")
+    
+
+    # Búsqueda por palabras en el texto del aviso
     text_query = request.GET.get("q")
     if text_query:
-        cotizaciones_list = cotizaciones_list.filter(texto__icontains=text_query)
+        avisos_list = avisos_list.filter(text_aviso__icontains=text_query)
 
     # Búsqueda por rango de fechas
     start_date = request.GET.get("start_date")
@@ -230,19 +257,19 @@ def listado(request):
     if start_date and end_date:
         start_date = datetime.strptime(start_date, "%Y-%m-%d").replace(tzinfo=pytz.UTC)
         end_date = datetime.strptime(end_date, "%Y-%m-%d").replace(tzinfo=pytz.UTC)
-        cotizaciones_list = cotizaciones_list.filter(
-            fecha__range=(start_date, end_date)
+        avisos_list = avisos_list.filter(
+            fecha_aviso__range=(start_date, end_date)
         )
 
     # Búsqueda por categoría
     category_query = request.GET.get("category")
     if category_query:
-        cotizaciones_list = cotizaciones_list.filter(categoria=category_query)
+        avisos_list = avisos_list.filter(categoria=category_query)
 
     # Puedes añadir aquí más filtros si es necesario
 
-    # Renderizar el mismo template con las cotizaciones filtradas o todas
-    return render(request, "listado.html", {"cotizaciones": cotizaciones_list})
+    # Renderizar el mismo template con los avisos filtrados o todos
+    return render(request, "listado.html", {"avisos_list": avisos_list})
 
 
 from django.shortcuts import redirect
@@ -355,9 +382,7 @@ def descargar_pdf(request, nombre_archivo):
 
 
 from reportlab.pdfgen import canvas
-from reportlab.lib.pagesizes import letter
 from datetime import datetime
-from pdf2image import convert_from_path
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import A4
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Image, Spacer
@@ -366,11 +391,12 @@ import datetime
 import locale
 
 
-def descargar_certificado(request, nombre_archivo):
-    if nombre_archivo:
-        pdf_path = os.path.join(settings.MEDIA_ROOT, nombre_archivo)
+def descargar_certificado(request, aviso_id):
+    if aviso_id:
+        aviso = Aviso.objects.get(id=aviso_id)
+        pdf_path = os.path.join(settings.MEDIA_ROOT, aviso.nombre_archivo)
         nuevo_pdf_path = os.path.join(settings.MEDIA_ROOT, "nuevo_certificado.pdf")
-        aviso = Aviso.objects.get(nombre_archivo=nombre_archivo)
+        
 
         # para que el mes salga en español
         locale.setlocale(locale.LC_TIME, 'es_ES.UTF-8')
@@ -418,11 +444,11 @@ def descargar_certificado(request, nombre_archivo):
         try:
             pdf_file = open(nuevo_pdf_path, "rb")
             response = FileResponse(pdf_file)
-            nombre, _ = nombre_archivo.split('.')
+            nombre, _ = aviso.nombre_archivo.split('.')
             response["Content-Disposition"] = f'attachment; filename="{nombre}_certificado.pdf"'
             return response
         except FileNotFoundError:
             return HttpResponse("Archivo no encontrado", status=404)
     else:
         # Maneja el caso en el que el nombre_archivo está vacío
-        return HttpResponse("El nombre del archivo no es válido", status=400)
+        return HttpResponse("El id del archivo no es válido", status=400)

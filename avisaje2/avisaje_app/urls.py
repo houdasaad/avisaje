@@ -36,6 +36,6 @@ urlpatterns = [
         "descargar-pdf/<str:nombre_archivo>/", views.descargar_pdf, name="descargar_pdf"
     ),
     path(
-        "descargar-certificado/<str:nombre_archivo>/", views.descargar_certificado, name="descargar_certificado"
+        "descargar-certificado/<int:aviso_id>/", views.descargar_certificado, name="descargar_certificado"
     ),
 ]

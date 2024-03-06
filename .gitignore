@@ -3,5 +3,5 @@ media/
 __pycache__
 .vscode/
 .idea/
-db.sqlite3
+*.sqlite3
 observaciones.txt
