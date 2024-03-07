@@ -178,6 +178,8 @@ def cotizacion(request):
         )
         cotizacion.save()
 
+        request.session["cotizacion_id"] = cotizacion.id
+
         # Enviar el email
         subject = "Cotización de Avisaje Legal"
         message = f"""
@@ -245,7 +247,6 @@ def listado(request):
     # Comenzar con todos los avisos
     avisos_list = Aviso.objects.order_by("-fecha_aviso")
     
-
     # Búsqueda por palabras en el texto del aviso
     text_query = request.GET.get("q")
     if text_query:
@@ -283,6 +284,7 @@ que redirecciona a la pagina de pago.
 
 def iniciar_pago(request):
     costo = request.session.get("costo", 0)
+    cotizacion_id = request.session.get("cotizacion_id", 0)
 
     # Variables globales
     API_URL = r"https://api-prod01.etpayment.com"
@@ -298,6 +300,12 @@ def iniciar_pago(request):
         "merchant_api_token": MERCHANT_API_TOKEN,
         "merchant_order_id": "order-1992",  # id de orden de compra propio del comercio
         "order_amount": costo,
+        "metadata": [
+            {
+                "cotizacion_id": cotizacion_id,  # id de la cotización a pagar
+                "show": True
+            }
+        ]
     }
 
     # Obtención de session token
@@ -305,9 +313,8 @@ def iniciar_pago(request):
     resp = requests.post(API_URL + INIT_API, json=request_data)
     if resp.status_code == 200:
         token = resp.json()["token"]
-
+        signature_token = resp.json()["signature_token"]
         payment_url = PTM_URL + "/session/" + token
-
         # En lugar de usar webbrowser, redirigimos al cliente con Django
         return redirect(payment_url)
     else:
