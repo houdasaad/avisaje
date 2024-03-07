@@ -110,6 +110,7 @@
         <thead>
           <tr>
             <th style="width: 20%; font-size: 16px;">Fecha</th>
+            <th style="width: 20%; font-size: 16px;">Días publicado</th>
             <th style="width: 60%; font-size: 16px;">Aviso</th>
             <th style="width: 20%; font-size: 16px;">Acciones</th>
           </tr>
@@ -118,6 +119,8 @@
           {% for aviso in avisos_list %}
           <tr>
             <td style="font-size: 12px;">{{ aviso.fecha_aviso }}</td>
+            {% load date_calculations %}
+            <td style="font-size: 12px;">{% days_difference_with_current_date aviso.fecha_aviso %}</td>
             <td style="font-size: 12px;">{{ aviso.text_aviso|truncatewords:50 }}</td>
             <td>
               <div>
