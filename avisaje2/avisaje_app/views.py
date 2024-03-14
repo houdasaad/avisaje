@@ -42,10 +42,10 @@ from .utils import convert_word_to_pdf, convert_text_to_pdf
 from django.contrib import messages
 from django.urls import reverse
 from .models import Cotizacion
-
-
 import PyPDF2
+from dotenv import load_dotenv
 
+load_dotenv()
 
 def upload_file(request):
     if request.method == "POST" and request.FILES["file"]:
@@ -287,25 +287,17 @@ def iniciar_pago(request):
     cotizacion_id = request.session.get("cotizacion_id", 0)
 
     # Variables globales
-    API_URL = r"https://api-prod01.etpayment.com"
-    PTM_URL = r"https://pmt-01.etpayment.com"
+    API_URL = os.environ['TEST_API_URL']
+    PTM_URL = os.environ['TEST_PMT_URL']
     INIT_API = r"/session/initialize"
-    MERCHANT_CODE = "cl_desenfoque"
-    MERCHANT_API_TOKEN = (
-        "IITurcPfTCqRUamXzBOhNikvC1YgVp6FetxDpAgPIzyBmYBojRQHr073cAX1iPhX"
-    )
+    MERCHANT_CODE = os.environ['TEST_MERCHANT_CODE']
+    MERCHANT_API_TOKEN = os.environ['TEST_API_TOKEN']
 
     request_data = {
         "merchant_code": MERCHANT_CODE,
         "merchant_api_token": MERCHANT_API_TOKEN,
-        "merchant_order_id": "order-1992",  # id de orden de compra propio del comercio
+        "merchant_order_id": "1",  # id de orden de compra propio del comercio
         "order_amount": costo,
-        "metadata": [
-            {
-                "cotizacion_id": cotizacion_id,  # id de la cotización a pagar
-                "show": True
-            }
-        ]
     }
 
     # Obtención de session token
