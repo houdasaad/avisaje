@@ -1,0 +1,105 @@
+{
+	"info": {
+		"_postman_id": "252a5881-40dc-4ae9-813d-19138d62761e",
+		"name": "API ETpay",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "29052214"
+	},
+	"item": [
+		{
+			"name": "PAYMENT INITIALIZE",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"var jsonData = JSON.parse(responseBody);\r",
+							"postman.setEnvironmentVariable(\"session_token\", jsonData.token);\r",
+							"\r",
+							"pm.test(pm.variables.replaceIn(\"URL = {{PMT_URL}}/session/{{session_token}}\"), function(){\r",
+							"    pm.response.to.have.status(200);\r",
+							"});\r",
+							"\r",
+							"pm.test(pm.variables.replaceIn(\"QR_URL = https://api.qrserver.com/v1/create-qr-code/?size=300x300&data={{PMT_URL}}/session/{{session_token}}\"), function(){\r",
+							"    pm.response.to.have.status(200);\r",
+							"});"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"merchant_code\": \"{{MERCHANT_CODE}}\",\r\n    \"merchant_api_token\": \"{{MERCHANT_API_TOKEN}}\",\r\n    \"merchant_order_id\": \"OC-123\",\r\n    \"order_amount\": 1,\r\n    \"customer_email\": \"\",\r\n    \"metadata\": [\r\n        {\r\n            \"name\": \"Title\",\r\n            \"value\": \"subtitle\",\r\n            \"show\": false\r\n        }\r\n    ]\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{API_URL}}/session/initializes",
+					"host": [
+						"{{API_URL}}"
+					],
+					"path": [
+						"session",
+						"initializes"
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "API_URL",
+			"value": "https://api-sandbox.etpay.com",
+			"type": "string"
+		},
+		{
+			"key": "PMT_URL",
+			"value": "https://pmt-sandbox.etpay.com",
+			"type": "string"
+		},
+		{
+			"key": "MERCHANT_CODE",
+			"value": "cl_sandbox_desenfoque",
+			"type": "string"
+		},
+		{
+			"key": "MERCHANT_API_TOKEN",
+			"value": "MdduCzbdr0IsMYXBvRCM5IqRcu4KfeYcZbYbJBZ0m7rHU2xLVQdCWSg1OdLknZd8",
+			"type": "string"
+		},
+		{
+			"key": "session_token",
+			"value": "",
+			"type": "string"
+		}
+	]
+}

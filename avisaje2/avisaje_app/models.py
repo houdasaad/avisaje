@@ -22,7 +22,7 @@ class Cotizacion(models.Model):
 
     def get_absolute_url(self):
         return reverse("ver_cotizacion", args=[str(self.id)])
-
+    
 
 class Aviso(models.Model):
     fecha_aviso = models.DateTimeField(auto_now_add=True)

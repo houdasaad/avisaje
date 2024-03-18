@@ -18,7 +18,7 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 from . import views
-from .views import upload_file, cotizacion, pago_aviso, listado, iniciar_pago
+from .views import etpay_error, etpay_webhook, upload_file, cotizacion, pago_aviso, listado, iniciar_pago, etpay_success
 
 from django.urls import path
 
@@ -38,4 +38,7 @@ urlpatterns = [
     path(
         "descargar-certificado/<int:aviso_id>/", views.descargar_certificado, name="descargar_certificado"
     ),
+    path("etpay/success/", etpay_success, name="etpay_success"),
+    path("etpay/error/", etpay_error, name="etpay_error"),
+    path("etpay/webhook/", etpay_webhook, name="etpay_webhook"),
 ]

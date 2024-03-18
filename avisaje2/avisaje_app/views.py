@@ -1,3 +1,14 @@
+import json
+import locale
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Image, Spacer
+from reportlab.lib.pagesizes import A4
+from django.http import FileResponse, HttpResponse
+import requests
+from django.shortcuts import redirect
+from django.db.models import Q
+from .models import Aviso
+from docx2pdf import convert
 from django.shortcuts import render, redirect
 from PyPDF2 import PdfFileWriter, PdfReader
 from reportlab.pdfgen import canvas
@@ -10,14 +21,14 @@ from docx2txt import process
 from django.urls import reverse
 import os
 from django.contrib import messages
-from datetime import datetime
-from django.utils import timezone
+from datetime import datetime, date
 import random
 from .utils import (
     convert_pdf_to_image,
     convert_word_to_pdf,
     convert_text_to_pdf,
 )  # Asegúrate de tener estas funciones en utils.py
+import jwt
 
 import pytz
 from django.conf import settings
@@ -32,12 +43,10 @@ from django.shortcuts import render, redirect
 from .models import Cotizacion, Aviso
 import os
 from django.conf import settings
-from django.shortcuts import render, redirect
 from django.core.mail import send_mail
 from django.urls import reverse
 from django.contrib import messages
 from .models import Cotizacion
-from .utils import convert_word_to_pdf, convert_text_to_pdf
 
 from django.contrib import messages
 from django.urls import reverse
@@ -46,6 +55,7 @@ import PyPDF2
 from dotenv import load_dotenv
 
 load_dotenv()
+
 
 def upload_file(request):
     if request.method == "POST" and request.FILES["file"]:
@@ -73,9 +83,6 @@ def upload_file(request):
         return render(request, "success.html", {"signed_pdf_path": signed_pdf_path})
 
     return render(request, "upload.html")
-
-
-from docx2pdf import convert
 
 
 def convert_to_pdf(word_file_path):
@@ -123,7 +130,6 @@ def pago_aviso(request):
     return render(request, "pago_aviso.html")
 
 
-
 def extract_text_from_pdf(pdf_file):
     try:
         pdf_reader = PyPDF2.PdfReader(pdf_file)
@@ -152,7 +158,8 @@ def cotizacion(request):
                 text = extract_text_from_pdf(file)
 
             elif file.name.endswith(".doc") or file.name.endswith(".docx"):
-                text = process(file)  # Procesar otros tipos de archivo (como Word)
+                # Procesar otros tipos de archivo (como Word)
+                text = process(file)
                 pdf_filename = convert_word_to_pdf(file)
 
                 # Si el request es texto, convertir a PDF
@@ -205,15 +212,6 @@ def cotizacion(request):
     return render(request, "cotizacion.html")
 
 
-from .models import Cotizacion
-
-
-from django.shortcuts import render
-from .models import Aviso
-from django.db.models import Q
-from datetime import datetime
-
-
 # def listado(request):
 #     # Comenzar con todas las cotizaciones
 #     cotizaciones_list = Cotizacion.objects.order_by("-fecha")
@@ -246,7 +244,7 @@ from datetime import datetime
 def listado(request):
     # Comenzar con todos los avisos
     avisos_list = Aviso.objects.order_by("-fecha_aviso")
-    
+
     # Búsqueda por palabras en el texto del aviso
     text_query = request.GET.get("q")
     if text_query:
@@ -256,8 +254,10 @@ def listado(request):
     start_date = request.GET.get("start_date")
     end_date = request.GET.get("end_date")
     if start_date and end_date:
-        start_date = datetime.strptime(start_date, "%Y-%m-%d").replace(tzinfo=pytz.UTC)
-        end_date = datetime.strptime(end_date, "%Y-%m-%d").replace(tzinfo=pytz.UTC)
+        start_date = datetime.strptime(
+            start_date, "%Y-%m-%d").replace(tzinfo=pytz.UTC)
+        end_date = datetime.strptime(
+            end_date, "%Y-%m-%d").replace(tzinfo=pytz.UTC)
         avisos_list = avisos_list.filter(
             fecha_aviso__range=(start_date, end_date)
         )
@@ -273,9 +273,6 @@ def listado(request):
     return render(request, "listado.html", {"avisos_list": avisos_list})
 
 
-from django.shortcuts import redirect
-import requests
-
 """
 Request simple a la API,
 que redirecciona a la pagina de pago.
@@ -285,6 +282,7 @@ que redirecciona a la pagina de pago.
 def iniciar_pago(request):
     costo = request.session.get("costo", 0)
     cotizacion_id = request.session.get("cotizacion_id", 0)
+    cotization = Cotizacion.objects.get(pk=cotizacion_id)
 
     # Variables globales
     API_URL = os.environ['TEST_API_URL']
@@ -296,8 +294,13 @@ def iniciar_pago(request):
     request_data = {
         "merchant_code": MERCHANT_CODE,
         "merchant_api_token": MERCHANT_API_TOKEN,
-        "merchant_order_id": "1",  # id de orden de compra propio del comercio
+        "merchant_order_id": "OC-123",  # id de orden de compra propio del comercio
         "order_amount": costo,
+
+        # CAMPOS DE REDIRECCIÓN DINÁMICA
+        "payment_completed_url": "http://127.0.0.1:8000/etpay/success",
+        "payment_cancellation_url": "http://127.0.0.1:8000/etpay/error",
+        "payment_webhook_url": "http://127.0.0.1:8000/etpay/webhook",
     }
 
     # Obtención de session token
@@ -306,6 +309,7 @@ def iniciar_pago(request):
     if resp.status_code == 200:
         token = resp.json()["token"]
         signature_token = resp.json()["signature_token"]
+        request.session["signature_token"] = signature_token
         payment_url = PTM_URL + "/session/" + token
         # En lugar de usar webbrowser, redirigimos al cliente con Django
         return redirect(payment_url)
@@ -317,19 +321,12 @@ def iniciar_pago(request):
     # webbrowser.open(PTM_URL+'/session/'+token)
 
 
-from django.shortcuts import render
-from .models import Aviso
-
-
 def opciones(request):
     categoria_choices = Aviso.CATEGORIA_CHOICES
 
     # Aquí puedes añadir más lógica según necesites
 
     return render(request, "listado.html", {"categoria_choices": categoria_choices})
-
-
-from django.shortcuts import render
 
 
 def verificar_documento(request):
@@ -348,17 +345,6 @@ def verificar_documento(request):
         return render(request, "verificacion.html", {"mensaje": mensaje})
 
     return render(request, "verificacion.html", {})
-
-
-from django.http import HttpResponse
-
-
-from django.http import FileResponse
-import os
-
-from django.http import FileResponse, HttpResponse
-from django.conf import settings
-import os
 
 
 def descargar_pdf(request, nombre_archivo):
@@ -380,26 +366,16 @@ def descargar_pdf(request, nombre_archivo):
         return HttpResponse("El nombre del archivo no es válido", status=400)
 
 
-from reportlab.pdfgen import canvas
-from datetime import datetime
-from reportlab.pdfgen import canvas
-from reportlab.lib.pagesizes import A4
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Image, Spacer
-from reportlab.lib.styles import getSampleStyleSheet
-import datetime
-import locale
-
-
 def descargar_certificado(request, aviso_id):
     if aviso_id:
         aviso = Aviso.objects.get(id=aviso_id)
         pdf_path = os.path.join(settings.MEDIA_ROOT, aviso.nombre_archivo)
-        nuevo_pdf_path = os.path.join(settings.MEDIA_ROOT, "nuevo_certificado.pdf")
-        
+        nuevo_pdf_path = os.path.join(
+            settings.MEDIA_ROOT, "nuevo_certificado.pdf")
 
         # para que el mes salga en español
         locale.setlocale(locale.LC_TIME, 'es_ES.UTF-8')
-        fecha_actual = datetime.datetime.now()
+        fecha_actual = datetime.now()
         # para eliminar el cero a la izquierda (ej: 05 de marzo de 2024)
         dia = str(fecha_actual.day)
         fecha_actual_formateada = f"{dia} de {fecha_actual.strftime('%B')} de {fecha_actual.year}"
@@ -420,12 +396,14 @@ def descargar_certificado(request, aviso_id):
         styles = getSampleStyleSheet()
 
         # Encabezado
-        story.append(Paragraph("CERTIFICADO DE PUBLICACIÓN LEGAL", styles['Heading2']))
+        story.append(
+            Paragraph("CERTIFICADO DE PUBLICACIÓN LEGAL", styles['Heading2']))
 
         # Insertar imágenes como párrafos
         for i in range(imagenes_count):
             image_path = os.path.join(settings.MEDIA_ROOT, f'imagen_{i}.png')
-            story.append(Image(image_path, width=ancho_imagen, height=alto_imagen))
+            story.append(
+                Image(image_path, width=ancho_imagen, height=alto_imagen))
             # story.append(Spacer(1, 2))
 
         # Texto de conclusión
@@ -433,7 +411,8 @@ def descargar_certificado(request, aviso_id):
         story.append(Paragraph(texto_conclusion, styles['Normal']))
         story.append(Spacer(1, 7))
 
-        logo_path = os.path.join(settings.STATICFILES_DIRS[0],'avisaje_app', 'images', 'logo_desenfoque.png')
+        logo_path = os.path.join(
+            settings.STATICFILES_DIRS[0], 'avisaje_app', 'images', 'logo_desenfoque.png')
         ancho_logo = 300
         alto_logo = ancho_logo * 0.13
         story.append(Image(logo_path, width=ancho_logo, height=alto_logo))
@@ -451,3 +430,55 @@ def descargar_certificado(request, aviso_id):
     else:
         # Maneja el caso en el que el nombre_archivo está vacío
         return HttpResponse("El id del archivo no es válido", status=400)
+
+
+def etpay_success(request):
+    token = request.GET.get('jwt', '')
+    key = request.session.get("signature_token", "")
+    algorithm = "HS256" # Example: HS256, RS256, etc.
+
+    # Decode and verify the JWT
+    try:
+        decoded = jwt.decode(token, key, algorithms=[algorithm])
+        print(decoded)
+
+        # build aviso from cotizacion
+        cotizacion_id = request.session.get("cotizacion_id", 0)
+        cotizacion = Cotizacion.objects.get(pk=cotizacion_id)
+        aviso = Aviso(
+            nombre_archivo = cotizacion.nombre_archivo,
+            text_aviso = cotizacion.texto,
+            email = cotizacion.email,
+            archivo_pdf = cotizacion.archivo_pdf
+        )
+        aviso.save()
+        return render(request, 'etpay_success.html')
+    except jwt.InvalidTokenError as e:
+        print(f"Token verification failed: {e}")
+        render(request, 'etpay_error.html')
+    
+
+
+def etpay_error(request):
+    jwt = request.GET.get('jwt', '')
+    # Your JWT token
+    token = jwt
+
+    # The key used to sign the token
+    key = request.session.get("signature_token", "")
+
+    # The algorithm used to sign the token
+    algorithm = "HS256" # Example: HS256, RS256, etc.
+
+    # Decode and verify the JWT
+    try:
+        decoded = jwt.decode(token, key, algorithms=[algorithm])
+        print(decoded)
+    except jwt.InvalidTokenError as e:
+        print(f"Token verification failed: {e}")
+    return render(request, 'etpay_error.html')
+
+
+def etpay_webhook(request):
+    if request.method == "POST":
+        data = json.loads(request.body)

@@ -5,5 +5,5 @@ register = template.Library()
 
 @register.simple_tag
 def days_difference_with_current_date(date):
-    delta = datetime.now().date() - date
+    delta = datetime.now().date() - date.date()
     return delta.days
